@@ -35,7 +35,7 @@ class DummyAgent():
         self.mountain_car.reset()
 
         for n in range(n_steps):
-            print '\rt =', self.mountain_car.t,
+            print('\rt =', self.mountain_car.t)
             sys.stdout.flush()
             
             # choose a random action
@@ -49,7 +49,7 @@ class DummyAgent():
             
             # check for rewards
             if self.mountain_car.R > 0.0:
-                print "\rreward obtained at t = ", self.mountain_car.t
+                print("\rreward obtained at t = ", self.mountain_car.t)
                 break
 
     def learn(self):
