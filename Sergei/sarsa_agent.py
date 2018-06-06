@@ -328,7 +328,7 @@ plt.savefig(filename, bbox_inches = 'tight')"""
         self.w_history.append(self.w)
         return result
 
-def get_agent(seed = None, iterations = 50, max_steps = 1000, **kwargs):
+def get_agent(seed = None, iterations = 50, max_steps = 1000, use_tqdm = True, **kwargs):
     # implement seed
     if seed is not None: np.random.seed(seed)
 
@@ -339,14 +339,15 @@ def get_agent(seed = None, iterations = 50, max_steps = 1000, **kwargs):
     finished = 0
 
     # learning
-    with tqdm(total = iterations) as pbar:
-        for i in range(iterations):
-            result = agent.learn(max_steps)
-            if result >= max_steps + 1:
-                result = 0
-            if result > 0:
-                finished += 1
-                pbar.set_postfix(with_reward = finished, with_reward_percent = round(100 * finished / (i + 1)))
-            pbar.update(1)
+    if use_tqdm: pbar = tqdm(total = iterations)
+
+    for i in range(iterations):
+        result = agent.learn(max_steps)
+        if result >= max_steps + 1:
+            result = 0
+        if result > 0:
+            finished += 1
+            if use_tqdm: pbar.set_postfix(with_reward = finished, with_reward_percent = round(100 * finished / (i + 1)))
+        if use_tqdm: pbar.update(1)
 
     return agent
