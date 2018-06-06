@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import mountaincar
 from matplotlib import pyplot as plt
-import pickle, hashlib
+import pickle, hashlib, warnings
 
 class SARSAEligibilityAgent():
     """
@@ -48,6 +48,13 @@ class SARSAEligibilityAgent():
             self.w = np.zeros((self.n_actions, self.n_neurons))
         else:
             self.w = w
+
+        # history of w
+        self.w_history = []
+        self.w_history.append(self.w)
+
+        # history of escape latency
+        self.escape_latency = []
 
         # sampling softmax temperature
         self.tau = tau
@@ -142,8 +149,20 @@ plt.savefig(filename, bbox_inches = 'tight')"""
     def get_action_probas(self, Q):
         ''' get action probabilities as a vector '''
 
-        vector = np.exp(Q / self.tau)
-        return vector / np.sum(vector)
+        with warnings.catch_warnings():
+            # trying to get true vector
+            warnings.filterwarnings('error')
+            try:
+                vector = np.exp(Q / self.tau)
+                res = vector / np.sum(vector)
+                assert np.abs(np.sum(res) - 1) < 1e-1
+                return res
+            
+            # otherwise just outputting the argmax (happens if tau is very small and components are huge, in this case only one wins)
+            except:
+                res = np.zeros(self.n_actions)
+                res[np.argmax(Q)] = 1
+                return res
 
     def get_action_index(self, x, v, greedy = False):
         ''' Sample action for s = (x, v) and weights w with parameter tau '''
@@ -156,9 +175,11 @@ plt.savefig(filename, bbox_inches = 'tight')"""
             return np.argmax(Q)
         elif self.tau == np.inf: # uniform selection (infinite tau)
             return np.random.choice(range(self.n_actions))
-        else: # all other cases
+        else: # all other cases. returning greedy if can't do choice
             action_probas = self.get_action_probas(Q)
-            return np.random.choice(range(self.n_actions), p = action_probas)
+            try:
+                return np.random.choice(range(self.n_actions), p = action_probas)
+            except: return np.argmax(Q)
 
     def update_w(self, x, v, a_index, delta):
         ''' Perform gradient descent on Q(s, a) by delta given s and a'''
@@ -287,6 +308,8 @@ plt.savefig(filename, bbox_inches = 'tight')"""
                 if use_tqdm:
                     pbar.update()
                     pbar.set_postfix(info = 'Reward obtained')
+                self.escape_latency.append(n)
+                self.w_history.append(self.w)
                 return n
 
             # saving old state
@@ -298,4 +321,32 @@ plt.savefig(filename, bbox_inches = 'tight')"""
 
         #if not finished:
         #    print('No reward')
-        return max_steps + 1
+
+        # saving data
+        result = max_steps + 1
+        self.escape_latency.append(-1)
+        self.w_history.append(self.w)
+        return result
+
+def get_agent(seed = None, iterations = 50, max_steps = 1000, **kwargs):
+    # implement seed
+    if seed is not None: np.random.seed(seed)
+
+    # create an agent
+    agent = SARSAEligibilityAgent(**kwargs)
+
+    # number of iterations with reward
+    finished = 0
+
+    # learning
+    with tqdm(total = iterations) as pbar:
+        for i in range(iterations):
+            result = agent.learn(max_steps)
+            if result >= max_steps + 1:
+                result = 0
+            if result > 0:
+                finished += 1
+                pbar.set_postfix(with_reward = finished, with_reward_percent = round(100 * finished / (i + 1)))
+            pbar.update(1)
+
+    return agent
