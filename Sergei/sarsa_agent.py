@@ -57,7 +57,13 @@ class SARSAEligibilityAgent():
         self.escape_latency = []
 
         # sampling softmax temperature
+        # can be a function from learning iteration
         self.tau = tau
+
+        # setting tau
+        if callable(self.tau):
+            self.tau_func = self.tau
+            self.tau = self.tau_func(0)
         
         # reward discount factor
         self.gamma = gamma
@@ -67,6 +73,9 @@ class SARSAEligibilityAgent():
         
         # eligibility trace parameter
         self.lambda_ = lambda_
+
+        # number of iterations learned
+        self.learning_counter = 0
 
     def r(self, x, v):
         ''' get neuron activations for s = (x, v) '''
@@ -238,7 +247,14 @@ plt.savefig(filename, bbox_inches = 'tight')"""
         ----------
         n_steps -- number of steps to simulate for
         """
-            
+
+        # update iterations learned
+        self.learning_counter += 1
+
+        # setting tau based on learning counter
+        if hasattr(self, 'tau_func'):
+            self.tau = self.tau_func(self.learning_counter)
+
         # make sure the mountain-car is reset
         self.mountain_car.reset()
 
