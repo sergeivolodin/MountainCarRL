@@ -249,11 +249,12 @@ plt.savefig(filename, bbox_inches = 'tight')"""
         """
 
         # update iterations learned
-        self.learning_counter += 1
+        if hasattr(self, 'learning_counter'):
+            self.learning_counter += 1
 
-        # setting tau based on learning counter
-        if hasattr(self, 'tau_func'):
-            self.tau = self.tau_func(self.learning_counter)
+            # setting tau based on learning counter
+            if hasattr(self, 'tau_func'):
+                self.tau = self.tau_func(self.learning_counter)
 
         # make sure the mountain-car is reset
         self.mountain_car.reset()
