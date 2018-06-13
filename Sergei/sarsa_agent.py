@@ -47,7 +47,7 @@ class SARSAEligibilityAgent():
             #self.w = np.random.randn(self.n_actions, self.n_neurons)
             self.w = np.zeros((self.n_actions, self.n_neurons))
         else:
-            self.w = w
+            self.w = np.copy(w)
             assert self.w.shape == (self.n_actions, self.n_neurons), "Please provide w with valid shape"
 
         # history of w
