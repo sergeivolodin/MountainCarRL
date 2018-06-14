@@ -47,7 +47,8 @@ class SARSAEligibilityAgent():
             #self.w = np.random.randn(self.n_actions, self.n_neurons)
             self.w = np.zeros((self.n_actions, self.n_neurons))
         else:
-            self.w = w
+            self.w = np.copy(w)
+            assert self.w.shape == (self.n_actions, self.n_neurons), "Please provide w with valid shape"
 
         # history of w
         self.w_history = []
@@ -368,3 +369,20 @@ def get_agent(seed = None, iterations = 50, max_steps = 1000, use_tqdm = True, *
         if use_tqdm: pbar.update(1)
 
     return agent
+
+def draw_Q_map_gif(agent, title):
+    # removing old images
+    os.system('rm train_*.png')
+
+    # going through weights
+    for i, w in tqdm(enumerate(agent.w_history), total = len(agent.w_history)):
+        # setting w
+        agent.w = w
+
+        # plotting Q matrix
+        agent.plot_Q_matrix_process('Training %s, iteration %d' % (title, i), 'train_%05d.png' % i)
+    
+    # creating a gif
+    os.system('convert -delay 15 -loop 0 train*.png train_%s.gif' % title)
+
+    return 'train_%s.gif' % title
